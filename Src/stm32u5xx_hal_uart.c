@@ -4456,6 +4456,8 @@ static void UART_RxISR_16BIT(UART_HandleTypeDef *huart)
   }
 }
 
+extern void AssertRTS(int assert);
+
 /**
   * @brief RX interrupt handler for 7 or 8  bits data word length and FIFO mode is enabled.
   * @note   Function is called under interruption only, once
@@ -4473,6 +4475,10 @@ static void UART_RxISR_8BIT_FIFOEN(UART_HandleTypeDef *huart)
   uint32_t  cr1its   = READ_REG(huart->Instance->CR1);
   uint32_t  cr3its   = READ_REG(huart->Instance->CR3);
 
+  if (isrflags & USART_ISR_RXFT)
+  {
+	  AssertRTS(0);
+  }
   /* Check that a Rx process is ongoing */
   if (huart->RxState == HAL_UART_STATE_BUSY_RX)
   {
@@ -4484,6 +4490,10 @@ static void UART_RxISR_8BIT_FIFOEN(UART_HandleTypeDef *huart)
       huart->pRxBuffPtr++;
       huart->RxXferCount--;
       isrflags = READ_REG(huart->Instance->ISR);
+      if (!(isrflags & USART_ISR_RXNE_RXFNE))
+      {
+    	  AssertRTS(1);
+      }
 
       /* If some non blocking errors occurred */
       if ((isrflags & (USART_ISR_PE | USART_ISR_FE | USART_ISR_NE)) != 0U)
